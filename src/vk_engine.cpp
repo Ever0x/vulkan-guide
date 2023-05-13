@@ -9,8 +9,6 @@
 
 #include <VkBootstrap.h>
 
-#define VK_CHECK(func) {VkResult error = func; if(error) {std::cout << error << '\n'; abort();}}
-
 void VulkanEngine::init()
 {
 	// We initialize SDL and create a window with it. 
@@ -29,6 +27,7 @@ void VulkanEngine::init()
 	
 	init_vulkan();
 	init_swapchain();
+	init_commands();
 
 	//everything went fine
 	_isInitialized = true;
@@ -37,6 +36,8 @@ void VulkanEngine::cleanup()
 {	
 	if (_isInitialized) 
 	{	
+		vkDestroyCommandPool(_device, _command_pool, nullptr);
+
 		vkDestroySwapchainKHR(_device, _swapchain, nullptr);
 
 		for (auto image_view : _swapchain_image_views)
@@ -96,6 +97,9 @@ void VulkanEngine::init_vulkan()
 
 	_physical_device = vkb_physical_device.physical_device;
 	_device = vkb_device.device;
+
+	_graphics_queue = vkb_device.get_queue(vkb::QueueType::graphics).value();
+	_graphics_queue_family = vkb_device.get_queue_index(vkb::QueueType::graphics).value();
 }
 
 void VulkanEngine::init_swapchain()
@@ -110,3 +114,10 @@ void VulkanEngine::init_swapchain()
 	_swapchain_image_views = vkb_swapchain.get_image_views().value();
 }
 
+void VulkanEngine::init_commands()
+{
+	_command_pool = vkinit::create_command_pool(_device, _graphics_queue_family, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	_command_buffer = vkinit::create_command_buffer(_device, _command_pool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+
+}
